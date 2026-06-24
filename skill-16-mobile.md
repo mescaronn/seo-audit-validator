@@ -1,71 +1,26 @@
----
-name: seo-audit-validator-mobile
-description: "Validates Mobile rules from SEO audit output. Use when audit contains any of: Font Size, Interstitials, Viewport Width, Multiple Viewports, Horizontal Scroll"
----
+# Skill 16: Mobile
 
-# SEO Audit Validator: Mobile
-
-## Rules
-
-### Viewport Width (`mobile-viewport-width`) | Severity: warn
+### Viewport Width | `mobile-viewport-width` | warn
 ```js
-document.querySelector('meta[name="viewport"]')?.getAttribute('content')
-```
-**Compare:** Should contain 'width=device-width'. Fixed pixel width (e.g. width=640) → correct flag.
-
----
-
-### Multiple Viewports (`mobile-multiple-viewports`) | Severity: fail
-```js
-document.querySelectorAll('meta[name="viewport"]').length
-```
-**Compare:** >1 → correct flag. 1 → false positive.
-
----
-
-### Zoom Disabled (see Accessibility) | Severity: fail
-```js
-const v = document.querySelector('meta[name="viewport"]')?.getAttribute('content');
-console.log('Viewport:', v, '| Zoom disabled:', v?.includes('user-scalable=no') || v?.includes('maximum-scale=1'))
+console.log('Viewport:', document.querySelector('meta[name="viewport"]')?.getAttribute('content')??'none')
 ```
 
----
-
-### Font Size (`mobile-font-size`) | Severity: fail/warn
+### Multiple Viewports | `mobile-multiple-viewports` | fail
 ```js
-const bodySize = parseInt(getComputedStyle(document.body).fontSize);
-console.log('Body font size:', bodySize + 'px', '| Below 16px:', bodySize < 16)
+console.log('ViewportCount:', document.querySelectorAll('meta[name="viewport"]').length)
 ```
-**Also check small text:**
-```js
-[...document.querySelectorAll('p, span, li, td')].filter(el => parseInt(getComputedStyle(el).fontSize) < 12).length
-```
-**Compare:** Body <16px → tool may be correct. Count of elements <12px vs tool's count.
 
----
-
-### Horizontal Scroll (`mobile-horizontal-scroll`) | Severity: fail/warn
+### Font Size | `mobile-font-size` | warn/fail
 ```js
-console.log('Horizontal scroll:', document.documentElement.scrollWidth > window.innerWidth, '| Page width:', document.documentElement.scrollWidth, '| Window width:', window.innerWidth)
+console.log('BodyFontSize:', parseInt(getComputedStyle(document.body).fontSize), '| SmallTextCount:', [...document.querySelectorAll('p,span,li,td')].filter(el=>parseInt(getComputedStyle(el).fontSize)<12).length)
 ```
-**Compare:** scrollWidth > innerWidth → correct flag.
 
----
+### Interstitials | `mobile-interstitials` | warn/fail
+```js
+console.log('VisibleOverlays:', [...document.querySelectorAll('div[class*="overlay"],div[class*="modal"],div[class*="popup"]')].filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden';}).length, '| HighZIndex:', [...document.querySelectorAll('div[class*="overlay"],div[class*="modal"],div[class*="popup"]')].filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&parseInt(s.zIndex)>100;}).length)
+```
 
-### Interstitials (`mobile-interstitials`) | Severity: fail/warn
-**Console (total overlays):**
+### Horizontal Scroll | `mobile-horizontal-scroll` | fail/warn
 ```js
-[...document.querySelectorAll('div.overlay, div[class*="overlay"]')].filter(el => {
-  const s = getComputedStyle(el);
-  return s.display !== 'none' && s.visibility !== 'hidden';
-}).length
+console.log('HorizontalScroll:', document.documentElement.scrollWidth>window.innerWidth?1:0, '| PageWidth:', document.documentElement.scrollWidth, '| WindowWidth:', window.innerWidth)
 ```
-**Console (high z-index = intrusive popups):**
-```js
-[...document.querySelectorAll('div.overlay, div[class*="overlay"]')].filter(el => {
-  const s = getComputedStyle(el);
-  return s.display !== 'none' && parseInt(s.zIndex) > 100;
-}).length
-```
-**Compare:** Total overlays vs tool's count. High z-index count = actual intrusive popups.
-**Note:** Decorative card overlays (low z-index) ≠ interstitials. Report if tool is counting decorative ones.
