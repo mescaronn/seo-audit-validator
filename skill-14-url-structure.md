@@ -1,119 +1,69 @@
----
-name: seo-audit-validator-url-structure
-description: "Validates URL Structure rules from SEO audit output. Use when audit contains any of: Slug Keywords, Stop Words, Uppercase URLs, Underscores, Double Slashes, HTTP/HTTPS Duplicate, Spaces in URL, Non-ASCII, URL Length, Session IDs, Tracking Params, Internal Search, Repetitive Path, URL Parameters"
----
+# Skill 14: URL Structure
 
-# SEO Audit Validator: URL Structure
-
-## Base Command
+### Uppercase URLs | `url-uppercase` | warn
 ```js
-console.log('Full URL:', window.location.href, '| Path:', window.location.pathname, '| Query:', window.location.search)
+console.log('HasUppercase:', window.location.pathname!==window.location.pathname.toLowerCase()?1:0)
 ```
 
-## Rules
-
-### Uppercase URLs (`url-uppercase`) | Severity: warn
+### Underscores | `url-underscores` | warn
 ```js
-const path = window.location.pathname;
-console.log('Has uppercase:', path !== path.toLowerCase(), '| Path:', path)
+console.log('HasUnderscores:', window.location.pathname.includes('_')?1:0)
 ```
 
----
-
-### Underscores (`url-underscores`) | Severity: warn
+### Double Slashes | `url-double-slash` | warn
 ```js
-console.log('Has underscores:', window.location.pathname.includes('_'), '| Path:', window.location.pathname)
+console.log('HasDoubleSlash:', /\/\/(?!$)/.test(window.location.pathname)?1:0)
 ```
 
----
-
-### Double Slashes (`url-double-slash`) | Severity: warn
+### Spaces in URL | `url-spaces` | fail
 ```js
-console.log('Has double slash:', /\/\/(?!$)/.test(window.location.pathname))
+console.log('HasSpaces:', (window.location.href.includes('%20')||window.location.href.includes('+'))?1:0)
 ```
 
----
-
-### Spaces in URL (`url-spaces`) | Severity: fail
+### Non-ASCII | `url-non-ascii` | warn
 ```js
-console.log('Has %20:', window.location.href.includes('%20') || window.location.href.includes('+'))
+console.log('HasNonASCII:', /[^\x00-\x7F]/.test(window.location.href)?1:0)
 ```
 
----
-
-### Non-ASCII (`url-non-ascii`) | Severity: warn
+### URL Length | `url-length` | warn
 ```js
-console.log('Has non-ASCII:', /[^\x00-\x7F]/.test(window.location.href))
+console.log('URLLength:', window.location.href.length, '| PathLength:', window.location.pathname.length)
 ```
 
----
-
-### URL Length (`url-length`) | Severity: warn
+### Session IDs | `url-session-ids` | fail
 ```js
-console.log('URL length:', window.location.href.length, '| Path length:', window.location.pathname.length, '| Recommended path: <75 chars')
+console.log('SessionIDs:', /PHPSESSID|JSESSIONID|sessionid|sessid/i.test(window.location.search)?1:0)
 ```
 
----
-
-### Session IDs (`url-session-ids`) | Severity: fail
+### Tracking Params | `url-tracking-params` | warn
 ```js
-const params = window.location.search;
-console.log('Session params:', params.match(/(?:PHPSESSID|JSESSIONID|sessionid|sessid|sid=)[a-z0-9]+/i) || 'None found')
+console.log('TrackingParams:', /utm_|fbclid|gclid|msclkid/i.test(window.location.search)?1:0)
 ```
 
----
-
-### Tracking Params (`url-tracking-params`) | Severity: warn
+### Internal Search | `url-internal-search` | warn
 ```js
-const params = window.location.search;
-console.log('Tracking params:', params.match(/utm_|fbclid|gclid|msclkid|mc_eid/i) ? 'FOUND: ' + params : 'None')
+console.log('IsSearchURL:', /[?&](?:q|query|search|s)=/i.test(window.location.search)?1:0)
 ```
 
----
-
-### Internal Search (`url-internal-search`) | Severity: warn
+### Repetitive Path | `url-repetitive-path` | warn
 ```js
-console.log('Is search URL:', window.location.search.match(/[?&](?:q|query|search|s)=/i) ? 'Yes — should be noindexed' : 'No')
+const segs=window.location.pathname.split('/').filter(s=>s);const dups=segs.filter((s,i)=>segs.indexOf(s)!==i);console.log('RepetitiveSegments:', dups.length)
 ```
 
----
-
-### Repetitive Path (`url-repetitive-path`) | Severity: warn
+### URL Parameters | `url-parameters` | warn
 ```js
-const segments = window.location.pathname.split('/').filter(s => s);
-const dupSegments = segments.filter((s, i) => segments.indexOf(s) !== i);
-console.log('Duplicate path segments:', dupSegments)
+console.log('ParamCount:', [...new URLSearchParams(window.location.search).keys()].length)
 ```
 
----
-
-### URL Parameters (`url-parameters`) | Severity: warn
+### Stop Words | `url-stop-words` | warn
 ```js
-const params = new URLSearchParams(window.location.search);
-console.log('Parameter count:', [...params.keys()].length, '| Params:', [...params.keys()])
-```
-**Compare:** >3 parameters typically flagged.
-
----
-
-### Stop Words (`url-stop-words`) | Severity: warn
-```js
-const stopWords = ['the','a','an','and','or','but','in','on','at','to','for','of','with','by'];
-const segments = window.location.pathname.split(/[-/]/).filter(s => s);
-const found = segments.filter(s => stopWords.includes(s.toLowerCase()));
-console.log('Stop words in URL:', found)
+const sw=['the','a','an','and','or','but','in','on','at','to','for','of','with','by'];const segs=window.location.pathname.split(/[-\/]/).filter(s=>s);console.log('StopWords:', segs.filter(s=>sw.includes(s.toLowerCase())).length)
 ```
 
----
-
-### Slug Keywords (`url-slug-keywords`) | Severity: fail/warn
-**Check:** Is the URL path descriptive? Numeric IDs like `/p=123` or `/product-12345` → tool correct. Descriptive slugs → false positive.
+### Slug Keywords | `url-slug-keywords` | warn/fail
 ```js
-console.log('Path:', window.location.pathname, '| Is numeric:', /^\/[\d]+$/.test(window.location.pathname))
+console.log('PathLength:', window.location.pathname.length, '| IsNumeric:', /^\/[\d]+$/.test(window.location.pathname)?1:0)
 ```
 
----
-
-### HTTP/HTTPS Duplicate (`url-http-https-duplicate`) | Severity: warn
-**Check:** Try http:// version of page. If both return 200 without redirect → tool correct.
-**Note:** Requires Redirect Path extension or manual check.
+### HTTP/HTTPS Duplicate | `url-http-https-duplicate` | warn
+**CANNOT VALIDATE** - navigate to http:// version and check if redirects to https://
