@@ -1,155 +1,69 @@
----
-name: seo-audit-validator-images
-description: "Validates Images rules from SEO audit output. Use when audit contains any of: Dimensions, Broken Images, Alt Present, Alt Quality, Background Image SEO, Lazy Loading, Size, Responsive, Modern Format, Figure Captions, Filename Quality, Picture Element, Inline SVG Size, Alt Length"
----
+# Skill 04: Images
 
-# SEO Audit Validator: Images
-
-## Rules
-
-### Alt Present (`images-alt-present`) | Severity: fail
-**Console:**
+### Alt Present | `images-alt-present` | fail
 ```js
-[...document.querySelectorAll('img:not([alt])')].map(img => img.src.split('/').pop())
+console.log('ImgsWithoutAlt:', document.querySelectorAll('img:not([alt])').length)
 ```
-**Compare:** Count vs tool's count. Empty → false positive.
 
----
-
-### Alt Quality (`images-alt-quality`) | Severity: warn
-**Console:**
+### Alt Quality | `images-alt-quality` | warn
 ```js
-[...document.querySelectorAll('img[alt]')].filter(img => {
-  const alt = img.alt.trim().toLowerCase();
-  return ['image','photo','picture','img','icon','banner','logo'].includes(alt) || alt.length < 5;
-}).map(img => ({src: img.src.split('/').pop(), alt: img.alt}))
+console.log('PoorAltCount:', [...document.querySelectorAll('img[alt]')].filter(img=>{const a=img.alt.trim().toLowerCase();return['image','photo','picture','img','icon','banner','logo'].includes(a)||a.length<5;}).length)
 ```
-**Compare:** Count vs tool's count. Check if tool's flagged URLs match results.
-**Note:** Tool may flag images not visible in your results — verify each flagged URL exists in DOM.
 
----
-
-### Alt Length (`images-alt-length`) | Severity: warn
-**Console:**
+### Alt Length | `images-alt-length` | warn
 ```js
-[...document.querySelectorAll('img[alt]')].filter(img => img.alt.length > 125 || (img.alt.length < 5 && img.alt.length > 0)).map(img => ({src: img.src.split('/').pop(), alt: img.alt, length: img.alt.length}))
+console.log('LongAlt:', [...document.querySelectorAll('img[alt]')].filter(img=>img.alt.length>125).length)
 ```
-**Compare:** Count vs tool's count.
 
----
-
-### Dimensions (`images-dimensions`) | Severity: warn
-**Console:**
+### Dimensions | `images-dimensions` | warn
 ```js
-[...document.querySelectorAll('img')].filter(img => !img.getAttribute('width') || !img.getAttribute('height')).length
+console.log('MissingDimensions:', [...document.querySelectorAll('img')].filter(img=>!img.getAttribute('width')||!img.getAttribute('height')).length)
 ```
-**Compare:** Count vs tool's count.
 
----
-
-### Lazy Loading (`images-lazy-loading`) | Severity: warn
-**Console (below-fold without lazy):**
+### Lazy Loading | `images-lazy-loading` | warn
 ```js
-[...document.querySelectorAll('img')].filter(img => !img.getAttribute('loading')).length
+console.log('TotalImgs:', document.querySelectorAll('img').length, '| NoLazy:', [...document.querySelectorAll('img')].filter(img=>!img.getAttribute('loading')).length, '| BelowFoldNoLazy:', [...document.querySelectorAll('img')].filter(img=>{const r=img.getBoundingClientRect();return r.top>window.innerHeight&&!img.getAttribute('loading');}).length)
 ```
-**Also check visible count:**
+
+### Modern Format | `images-modern-format` | warn
 ```js
-[...document.querySelectorAll('img')].filter(img => {
-  const r = img.getBoundingClientRect();
-  return r.top > window.innerHeight && !img.getAttribute('loading');
-}).length
+console.log('TotalImgs:', document.querySelectorAll('img').length, '| WebP:', [...document.querySelectorAll('img')].filter(img=>img.src.includes('.webp')).length, '| AVIF:', [...document.querySelectorAll('img')].filter(img=>img.src.includes('.avif')).length, '| JPG:', [...document.querySelectorAll('img')].filter(img=>img.src.match(/\.jpe?g/i)).length, '| PNG:', [...document.querySelectorAll('img')].filter(img=>img.src.includes('.png')).length, '| SVG:', [...document.querySelectorAll('img')].filter(img=>img.src.includes('.svg')).length)
 ```
-**Compare:** Tool flags below-fold images missing lazy. Compare counts.
-**Note:** If console shows 0 below-fold, may be false positive or tool is counting differently.
 
----
-
-### Size (`images-size`) | Severity: warn
-**Check:** DevTools → Network tab → filter by Img → sort by Size descending → count images >200KB.
-**Compare:** Count vs tool's reported count.
-**Note:** Cannot check via Console due to CORS. Must use Network tab.
-
----
-
-### Responsive (`images-responsive`) | Severity: warn
-**Console:**
+### Responsive | `images-responsive` | warn
 ```js
-[...document.querySelectorAll('img')].filter(img => !img.hasAttribute('srcset') && !img.closest('picture')).length
+console.log('NonResponsive:', [...document.querySelectorAll('img')].filter(img=>!img.hasAttribute('srcset')&&!img.closest('picture')).length)
 ```
-**Compare:** Count vs tool's count.
 
----
-
-### Modern Format (`images-modern-format`) | Severity: warn
-**Console:**
+### Picture Element | `images-picture-element` | fail
 ```js
-[...document.querySelectorAll('img')].reduce((acc, img) => {
-  const ext = img.src.split('.').pop().split('?')[0].toLowerCase();
-  acc[ext] = (acc[ext] || 0) + 1;
-  return acc;
-}, {})
+console.log('PictureTotal:', document.querySelectorAll('picture').length, '| PictureNoSource:', [...document.querySelectorAll('picture')].filter(pic=>pic.querySelectorAll('source').length===0).length, '| PictureNoImg:', [...document.querySelectorAll('picture')].filter(pic=>!pic.querySelector('img')).length)
 ```
-**Calculate:** `webp + avif` count / total (excluding svg) = modern format %.
-**Compare:** Tool's % vs your calculated %. Check if SVG is being counted as modern (it shouldn't be).
 
----
-
-### Broken Images (`images-broken`) | Severity: fail
-**Check:** DevTools → Network tab → filter by Img → look for red 404 status.
-**Also Console:**
+### Inline SVG Size | `images-inline-svg-size` | warn
 ```js
-[...document.querySelectorAll('img')].filter(img => !img.complete || img.naturalWidth === 0).map(img => img.src)
+console.log('LargeSVGs:', [...document.querySelectorAll('svg')].filter(svg=>new XMLSerializer().serializeToString(svg).length/1024>5).length)
 ```
-**Compare:** Count vs tool's count.
 
----
-
-### Figure Captions (`images-figure-captions`) | Severity: warn
-**Console:**
+### Broken Images | `images-broken` | fail
 ```js
-[...document.querySelectorAll('figure')].filter(fig => !fig.querySelector('figcaption')).length
+console.log('BrokenImgs:', [...document.querySelectorAll('img')].filter(img=>!img.complete||img.naturalWidth===0).length)
 ```
-**Compare:** Count vs tool's count. 0 → false positive.
 
----
-
-### Filename Quality (`images-filename-quality`) | Severity: warn
-**Console:**
+### Figure Captions | `images-figure-captions` | warn
 ```js
-[...document.querySelectorAll('img')].filter(img => {
-  const name = img.src.split('/').pop().split('?')[0];
-  return /^(img|image|dsc|photo|screenshot|pic|banner|_)[\d_-]/i.test(name);
-}).map(img => img.src.split('/').pop().split('?')[0])
+console.log('FiguresWithoutCaption:', [...document.querySelectorAll('figure')].filter(fig=>!fig.querySelector('figcaption')).length)
 ```
-**Compare:** Count vs tool's count.
 
----
-
-### Picture Element (`images-picture-element`) | Severity: fail
-**Console:**
+### Filename Quality | `images-filename-quality` | warn
 ```js
-[...document.querySelectorAll('picture')].map((pic, i) => ({index: i, sources: pic.querySelectorAll('source').length, hasImg: !!pic.querySelector('img')}))
+console.log('BadFilenames:', [...document.querySelectorAll('img')].filter(img=>/^(img|image|dsc|photo|screenshot|pic|banner|_)[\d_-]/i.test(img.src.split('/').pop().split('?')[0])).length)
 ```
-**Compare:** Count sources for each picture. Tool flags pictures without source OR without img fallback.
-**Note:** Check if tool is flagging "no source" or "no img fallback" — different issues.
 
----
-
-### Inline SVG Size (`images-inline-svg-size`) | Severity: warn
-**Console:**
+### Background Image SEO | `images-background-seo` | warn
 ```js
-[...document.querySelectorAll('svg')].map(svg => ({
-  id: svg.id || 'no-id',
-  size: (new XMLSerializer().serializeToString(svg).length / 1024).toFixed(1) + 'KB'
-})).filter(s => parseFloat(s.size) > 5)
+console.log('CSSBackgroundImgs:', [...document.querySelectorAll('[style*="background-image"]')].length)
 ```
-**Compare:** Count vs tool's count. Tool flags SVGs >5KB.
 
----
-
-### Background Image SEO (`images-background-seo`) | Severity: warn
-**Console:**
-```js
-[...document.querySelectorAll('[style*="background-image"]')].map(el => ({tag: el.tagName, class: el.className, style: el.style.backgroundImage}))
-```
-**Compare:** Count vs tool's count. Content-relevant images in CSS backgrounds are flagged.
+### Size | `images-size` | warn
+**CANNOT VALIDATE** - check Network tab > Img filter > Size column > count rows >200KB
