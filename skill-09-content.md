@@ -1,171 +1,81 @@
----
-name: seo-audit-validator-content
-description: "Validates Content rules from SEO audit output. Use when audit contains any of: Word Count, Reading Level, Keyword Stuffing, Article Link Density, Broken HTML, Meta in Body, Heading Hierarchy, Heading Length, Heading Unique, Title Same as H1, Title Pixel Width, Description Pixel Width, Duplicate Description, MIME Type, Text/HTML Ratio, Exact Duplicate, Near Duplicate"
----
+# Skill 09: Content
 
-# SEO Audit Validator: Content
-
-## Rules
-
-### Word Count (`content-word-count`) | Severity: warn/fail
-**Console:**
+### Word Count | `content-word-count` | warn/fail
 ```js
-const words = document.body.innerText.trim().split(/\s+/).filter(w => w.length > 0);
-console.log('Word count:', words.length)
-```
-**Compare:** Tool flags <300 words (warn) or <100 (fail). Compare actual count.
-
----
-
-### Reading Level (`content-reading-level`) | Severity: warn
-**Note:** Flesch-Kincaid requires calculation. Console approximation:
-```js
-const text = document.body.innerText;
-const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-const words = text.trim().split(/\s+/).length;
-const avgWordsPerSentence = words / sentences;
-console.log('Avg words/sentence:', avgWordsPerSentence.toFixed(1), '| Target: <20 words/sentence')
-```
-**Compare:** >20 words/sentence on average → complex content. Tool's score needs Lighthouse or specific tool.
-
----
-
-### Keyword Stuffing (`content-keyword-stuffing`) | Severity: warn/fail
-**Console:**
-```js
-const words = document.body.innerText.toLowerCase().match(/\b\w+\b/g) || [];
-const total = words.length;
-const freq = {};
-words.forEach(w => freq[w] = (freq[w]||0)+1);
-Object.entries(freq).filter(([w,c]) => (c/total*100) > 2 && w.length > 3).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([w,c]) => ({word: w, count: c, density: (c/total*100).toFixed(2)+'%'}))
-```
-**Compare:** Count matches, density percentages. Tool may use different total word count method.
-
----
-
-### Article Link Density (`content-article-links`) | Severity: warn
-**Console:**
-```js
-const textLength = document.body.innerText.length;
-const links = document.querySelectorAll('a').length;
-console.log('Links:', links, '| Text chars:', textLength, '| Ratio:', (links / textLength * 100).toFixed(2) + '%')
+console.log('WordCount:', document.body.innerText.trim().split(/\s+/).filter(w=>w.length>0).length)
 ```
 
----
-
-### Broken HTML (`content-broken-html`) | Severity: warn/fail
-**Console (run all three):**
+### Keyword Stuffing | `content-keyword-stuffing` | warn/fail
 ```js
-// Duplicate IDs
-const ids = [...document.querySelectorAll('[id]')].map(el => el.id).filter(id => id);
-const dupIds = ids.filter((id, i) => ids.indexOf(id) !== i);
-console.log('Duplicate IDs:', [...new Set(dupIds)]);
+const words=document.body.innerText.toLowerCase().match(/\b\w+\b/g)||[];const total=words.length;const freq={};words.forEach(w=>freq[w]=(freq[w]||0)+1);const over=Object.entries(freq).filter(([w,c])=>c/total*100>2&&w.length>3);console.log('TotalWords:', total, '| KeywordsOver2pct:', over.length)
 ```
+
+### Broken HTML | `content-broken-html` | warn/fail
 ```js
-// Invalid nesting (a > div)
-console.log('a > div elements:', document.querySelectorAll('a > div').length);
+const ids=[...document.querySelectorAll('[id]')].map(el=>el.id).filter(id=>id);const dupIds=ids.filter((id,i)=>ids.indexOf(id)!==i);console.log('DuplicateIDs:', [...new Set(dupIds)].length, '| AinDiv:', document.querySelectorAll('a > div').length, '| LinksNoHref:', document.querySelectorAll('a:not([href])').length)
 ```
+
+### Meta in Body | `content-meta-in-body` | fail
 ```js
-// Links missing href
-console.log('Links missing href:', document.querySelectorAll('a:not([href])').length);
+console.log('MetaInBody:', document.body.querySelectorAll('meta,title,link[rel="canonical"]').length)
 ```
-**Compare:** Sum up all issues. Tool reports total "problems" count. Verify each issue type.
 
----
-
-### Meta in Body (`content-meta-in-body`) | Severity: fail
-**Console:**
+### Heading Hierarchy | `content-heading-hierarchy` | warn
 ```js
-[...document.body.querySelectorAll('meta, title, link[rel="canonical"]')].map(el => el.outerHTML.substring(0, 100))
+const hs=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map(h=>parseInt(h.tagName[1]));let skips=0;for(let i=1;i<hs.length;i++){if(hs[i]-hs[i-1]>1)skips++;}console.log('HeadingSkips:', skips, '| FirstHeading:', 'H'+hs[0])
 ```
-**Compare:** Any results → correct flag. Empty → false positive.
 
----
-
-### Heading Hierarchy (`content-heading-hierarchy`) | Severity: warn
-**Console:**
+### Heading Length | `content-heading-length` | warn
 ```js
-[...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].slice(0, 10).map(h => ({tag: h.tagName, text: h.textContent.trim().substring(0, 50)}))
+console.log('ShortHeadings:', [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(h=>h.textContent.trim().length<10).length, '| LongHeadings:', [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(h=>h.textContent.trim().length>100).length)
 ```
-**Compare:** Check sequence — should go H1→H2→H3 without skipping. H2 before H1 → correct flag.
 
----
-
-### Heading Length (`content-heading-length`) | Severity: warn
-**Console:**
+### Heading Unique | `content-heading-unique` | warn
 ```js
-[...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].filter(h => h.textContent.trim().length < 10 || h.textContent.trim().length > 100).map(h => ({tag: h.tagName, text: h.textContent.trim(), length: h.textContent.trim().length}))
+const hs=[...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map(h=>h.textContent.trim().toLowerCase());const dups=hs.filter((h,i)=>hs.indexOf(h)!==i);console.log('DupInstances:', dups.length, '| UniqueDups:', [...new Set(dups)].length)
 ```
-**Compare:** Count vs tool's count. Tool may use <10 chars as threshold.
 
----
-
-### Heading Unique (`content-heading-unique`) | Severity: warn
-**Console:**
+### Title Same as H1 | `content-title-same-as-h1` | warn
 ```js
-const hs = [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].map(h => h.textContent.trim().toLowerCase());
-const dups = hs.filter((h,i) => hs.indexOf(h) !== i);
-console.log('Duplicate heading instances:', dups.length, '| Unique duplicated headings:', [...new Set(dups)].length)
+console.log('TitleSameAsH1:', document.querySelector('title')?.textContent.trim().toLowerCase()===document.querySelector('h1')?.textContent.trim().toLowerCase()?1:0)
 ```
-**Compare:** Tool reports count + list. Verify unique headings count matches.
 
----
-
-### Title Same as H1 (`content-title-same-as-h1`) | Severity: warn
-**Console:**
+### Title Pixel Width | `content-title-pixel-width` | warn
 ```js
-const title = document.querySelector('title')?.textContent.trim().toLowerCase();
-const h1 = document.querySelector('h1')?.textContent.trim().toLowerCase();
-console.log('Title:', title, '| H1:', h1, '| Same:', title === h1)
+console.log('TitleLength:', document.querySelector('title')?.textContent.trim().length??0, '| ApproxPx:', Math.round((document.querySelector('title')?.textContent.trim().length??0)*7))
 ```
-**Compare:** Same → correct flag. Different → false positive.
 
----
-
-### Title Pixel Width (`content-title-pixel-width`) | Severity: warn
-**Console:**
+### Description Pixel Width | `content-description-pixel-width` | warn
 ```js
-const title = document.querySelector('title')?.textContent.trim();
-console.log('Title:', title, '| Length:', title?.length, '| Approx px:', Math.round(title?.length * 7))
+console.log('DescLength:', document.querySelector('meta[name="description"]')?.getAttribute('content')?.length??0, '| ApproxPx:', Math.round((document.querySelector('meta[name="description"]')?.getAttribute('content')?.length??0)*7.5))
 ```
-**Compare:** Tool reports pixel width. >580px → flag. Check tool's calculation vs your estimate.
 
----
-
-### Description Pixel Width (`content-description-pixel-width`) | Severity: warn
-**Console:**
+### Text/HTML Ratio | `content-text-html-ratio` | warn
 ```js
-const desc = document.querySelector('meta[name="description"]')?.getAttribute('content');
-console.log('Description:', desc, '| Length:', desc?.length, '| Approx px:', Math.round(desc?.length * 7.5))
+console.log('TextLen:', document.body.innerText.length, '| HTMLLen:', document.body.innerHTML.length, '| RatioPct:', Math.round(document.body.innerText.length/document.body.innerHTML.length*100))
 ```
-**Compare:** Tool reports pixel width. >920px → flag. Compare values.
 
----
-
-### Duplicate Description (`content-duplicate-description`) | Severity: warn/fail
-**Note:** Crawl-mode rule. Cannot validate on single page.
-
----
-
-### MIME Type (`content-mime-type`) | Severity: warn/fail
-**Console:**
+### Lorem Ipsum | `content-lorem-ipsum` | warn
 ```js
-fetch(window.location.href, {method: 'HEAD'}).then(r => console.log('Content-Type:', r.headers.get('content-type')))
+console.log('LoremIpsum:', document.body.innerText.includes('Lorem ipsum')?1:0)
 ```
-**Compare:** Should be 'text/html; charset=utf-8'. Missing charset → correct flag.
 
----
-
-### Text/HTML Ratio (`content-text-html-ratio`) | Severity: warn
-**Console:**
+### Article Link Density | `content-article-links` | warn
 ```js
-const textLen = document.body.innerText.length;
-const htmlLen = document.body.innerHTML.length;
-console.log('Text:', textLen, '| HTML:', htmlLen, '| Ratio:', (textLen/htmlLen*100).toFixed(1)+'%')
+console.log('LinkCount:', document.querySelectorAll('a').length, '| TextLength:', document.body.innerText.length)
 ```
-**Compare:** Tool's ratio vs your calculation. <15% text is typically flagged.
 
----
+### MIME Type | `content-mime-type` | warn/fail
+**CANNOT VALIDATE** - check Network tab > Response Headers > content-type
 
-### Exact Duplicate / Near Duplicate (`content-duplicate-exact` / `content-duplicate-near`) | Severity: fail/warn
-**Note:** Crawl-mode rules. Cannot validate on single page.
+### Reading Level | `content-reading-level` | warn
+**CANNOT VALIDATE** - requires text analysis tool
+
+### Duplicate Description | `content-duplicate-description` | warn/fail
+**CANNOT VALIDATE** - requires site crawl
+
+### Exact Duplicate | `content-duplicate-exact` | fail
+**CANNOT VALIDATE** - requires site crawl
+
+### Near Duplicate | `content-duplicate-near` | warn
+**CANNOT VALIDATE** - requires site crawl
