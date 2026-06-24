@@ -1,77 +1,46 @@
----
-name: seo-audit-validator-social
-description: "Validates Social rules from SEO audit output. Use when audit contains any of: OG Title, OG Description, OG Image, OG Image Size, OG URL, Twitter Card, Share Buttons, Social Profiles, OG URL Canonical"
----
+# Skill 12: Social
 
-# SEO Audit Validator: Social
-
-## Rules
-
-### OG Title (`social-og-title`) | Severity: warn
+### OG Title | `social-og-title` | warn
 ```js
-document.querySelector('meta[property="og:title"]')?.getAttribute('content') || 'MISSING'
-```
-**Compare:** MISSING → correct flag.
-
----
-
-### OG Description (`social-og-description`) | Severity: warn
-```js
-document.querySelector('meta[property="og:description"]')?.getAttribute('content') || 'MISSING'
+console.log('OGTitle:', document.querySelector('meta[property="og:title"]')?.getAttribute('content')?.length??0)
 ```
 
----
-
-### OG Image (`social-og-image`) | Severity: warn
+### OG Description | `social-og-description` | warn
 ```js
-document.querySelector('meta[property="og:image"]')?.getAttribute('content') || 'MISSING'
+console.log('OGDesc:', document.querySelector('meta[property="og:description"]')?.getAttribute('content')?.length??0)
 ```
 
----
-
-### OG Image Size (`social-og-image-size`) | Severity: warn
+### OG Image | `social-og-image` | warn
 ```js
-const w = document.querySelector('meta[property="og:image:width"]')?.getAttribute('content');
-const h = document.querySelector('meta[property="og:image:height"]')?.getAttribute('content');
-console.log('og:image dimensions:', w + 'x' + h, '| Recommended: 1200x630')
-```
-**Compare:** Tool flags if below 1200x630. Even 1200x628 (2px off) gets flagged.
-
----
-
-### OG URL (`social-og-url`) | Severity: warn
-```js
-document.querySelector('meta[property="og:url"]')?.getAttribute('content') || 'MISSING'
+console.log('OGImage:', document.querySelector('meta[property="og:image"]')?1:0)
 ```
 
----
-
-### OG URL Canonical (`social-og-url-canonical`) | Severity: fail
+### OG Image Size | `social-og-image-size` | warn
 ```js
-const ogUrl = document.querySelector('meta[property="og:url"]')?.getAttribute('content');
-const canonical = document.querySelector('link[rel="canonical"]')?.href;
-console.log('og:url:', ogUrl, '| canonical:', canonical, '| Match:', ogUrl === canonical)
+console.log('OGWidth:', document.querySelector('meta[property="og:image:width"]')?.getAttribute('content')??'none', '| OGHeight:', document.querySelector('meta[property="og:image:height"]')?.getAttribute('content')??'none')
 ```
 
----
-
-### Twitter Card (`social-twitter-card`) | Severity: warn
+### OG URL | `social-og-url` | warn
 ```js
-document.querySelector('meta[name="twitter:card"]')?.getAttribute('content') || 'MISSING'
+console.log('OGURL:', document.querySelector('meta[property="og:url"]')?1:0)
 ```
 
----
-
-### Share Buttons (`social-share-buttons`) | Severity: warn
+### OG URL Canonical | `social-og-url-canonical` | fail
 ```js
-[...document.querySelectorAll('a[href*="facebook.com/sharer"], a[href*="twitter.com/intent"], a[href*="linkedin.com/sharing"], a[href*="pinterest.com/pin"]')].map(a => a.href)
+console.log('OGURL:', document.querySelector('meta[property="og:url"]')?.getAttribute('content')??'none', '| Canonical:', document.querySelector('link[rel="canonical"]')?.href??'none')
 ```
-**Also check:** Look for social sharing widget class names in Elements.
 
----
-
-### Social Profiles (`social-profiles`) | Severity: warn
+### Twitter Card | `social-twitter-card` | warn
 ```js
-[...document.querySelectorAll('a[href*="facebook.com/"], a[href*="twitter.com/"], a[href*="instagram.com/"], a[href*="linkedin.com/"], a[href*="youtube.com/"], a[href*="threads.net/"]')].map(a => a.href)
+console.log('TwitterCard:', document.querySelector('meta[name="twitter:card"]')?.getAttribute('content')??'none')
 ```
-**Compare:** 0-2 profiles → may flag. 3+ → false positive.
+
+### Share Buttons | `social-share-buttons` | warn
+```js
+console.log('ShareButtons:', document.querySelectorAll('a[href*="facebook.com/sharer"],a[href*="twitter.com/intent"],a[href*="linkedin.com/sharing"],a[href*="pinterest.com/pin"]').length)
+```
+
+### Social Profiles | `social-profiles` | warn
+```js
+console.log('SocialLinks:', document.querySelectorAll('a[href*="facebook.com/"],a[href*="twitter.com/"],a[href*="instagram.com/"],a[href*="linkedin.com/"],a[href*="youtube.com/"],a[href*="threads.net/"]').length)
+```
