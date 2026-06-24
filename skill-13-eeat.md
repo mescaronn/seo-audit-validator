@@ -1,108 +1,69 @@
----
-name: seo-audit-validator-eeat
-description: "Validates E-E-A-T rules from SEO audit output. Use when audit contains any of: About Page, Affiliate Disclosure, Author Byline, Author Expertise, Citations, Contact Page, Content Dates, Disclaimers, Editorial Policy, Physical Address, Privacy Policy, Terms of Service, Trust Signals, YMYL Detection"
----
+# Skill 13: E-E-A-T
 
-# SEO Audit Validator: E-E-A-T
-
-## Rules
-
-### About Page (`eeat-about-page`) | Severity: warn
+### About Page | `eeat-about-page` | warn
 ```js
-[...document.querySelectorAll('a')].filter(a => /about/i.test(a.href) || /about/i.test(a.textContent)).map(a => ({href: a.href, text: a.textContent.trim()}))
-```
-**Compare:** Empty → correct flag. Link to about page found → false positive.
-
----
-
-### Contact Page (`eeat-contact-page`) | Severity: warn
-```js
-[...document.querySelectorAll('a')].filter(a => /contact/i.test(a.href) || /contact/i.test(a.textContent)).map(a => ({href: a.href, text: a.textContent.trim()}))
+console.log('AboutLink:', [...document.querySelectorAll('a')].filter(a=>/about/i.test(a.href)||/about/i.test(a.textContent)).length)
 ```
 
----
-
-### Privacy Policy (`eeat-privacy-policy`) | Severity: warn
+### Contact Page | `eeat-contact-page` | warn
 ```js
-[...document.querySelectorAll('a')].filter(a => /privacy/i.test(a.href) || /privacy/i.test(a.textContent)).map(a => ({href: a.href, text: a.textContent.trim()}))
+console.log('ContactLink:', [...document.querySelectorAll('a')].filter(a=>/contact/i.test(a.href)||/contact/i.test(a.textContent)).length)
 ```
 
----
-
-### Terms of Service (`eeat-terms-of-service`) | Severity: warn
+### Privacy Policy | `eeat-privacy-policy` | warn
 ```js
-[...document.querySelectorAll('a')].filter(a => /terms|tos/i.test(a.href) || /terms|tos/i.test(a.textContent)).map(a => ({href: a.href, text: a.textContent.trim()}))
+console.log('PrivacyLink:', [...document.querySelectorAll('a')].filter(a=>/privacy/i.test(a.href)||/privacy/i.test(a.textContent)).length)
 ```
 
----
-
-### Author Byline (`eeat-author-byline`) | Severity: warn
+### Terms of Service | `eeat-terms-of-service` | warn
 ```js
-document.querySelector('[class*="author"], [rel="author"], .byline, [itemprop="author"]')?.textContent.trim()
-```
-**Note:** Mainly relevant for blog/article pages.
-
----
-
-### Author Expertise (`eeat-author-expertise`) | Severity: warn
-**Check:** Look for author bio section with credentials. Elements → search for "bio" or "author" classes.
-
----
-
-### Citations (`eeat-citations`) | Severity: warn
-```js
-[...document.querySelectorAll('a[href]')].filter(a => /\.gov|\.edu|ncbi\.nlm|pubmed/i.test(a.href)).map(a => ({href: a.href, text: a.textContent.trim()}))
+console.log('TermsLink:', [...document.querySelectorAll('a')].filter(a=>/terms|tos/i.test(a.href)||/terms/i.test(a.textContent)).length)
 ```
 
----
-
-### Content Dates (`eeat-content-dates`) | Severity: warn
+### Author Byline | `eeat-author-byline` | warn
 ```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-const dates = schemas.filter(s => s.datePublished || s.dateModified).map(s => ({published: s.datePublished, modified: s.dateModified}));
-console.log('Schema dates:', dates);
-console.log('Time elements:', [...document.querySelectorAll('time')].map(t => t.getAttribute('datetime')));
+console.log('AuthorByline:', document.querySelector('[class*="author"],[rel="author"],.byline,[itemprop="author"]')?1:0)
 ```
 
----
-
-### Physical Address (`eeat-physical-address`) | Severity: warn
+### Physical Address | `eeat-physical-address` | warn
 ```js
-[...document.querySelectorAll('[itemprop="address"], address, [class*="address"]')].map(el => el.textContent.trim().substring(0, 100))
+console.log('AddressElement:', document.querySelector('[itemprop="address"],address,[class*="address"]')?1:0)
 ```
 
----
-
-### Trust Signals (`eeat-trust-signals`) | Severity: warn
+### Trust Signals | `eeat-trust-signals` | warn
 ```js
-[...document.querySelectorAll('[class*="review"], [class*="rating"], [class*="badge"], [class*="certif"], [class*="trust"]')].length
+console.log('TrustElements:', document.querySelectorAll('[class*="review"],[class*="rating"],[class*="badge"],[class*="certif"],[class*="trust"]').length)
 ```
 
----
-
-### Affiliate Disclosure (`eeat-affiliate-disclosure`) | Severity: warn
+### Content Dates | `eeat-content-dates` | warn
 ```js
-document.body.innerText.match(/affiliate|sponsored|paid|commission/i) ? 'Disclosure text found' : 'No disclosure found'
+console.log('TimeElements:', document.querySelectorAll('time[datetime]').length)
 ```
 
----
-
-### Editorial Policy (`eeat-editorial-policy`) | Severity: warn
+### Citations | `eeat-citations` | warn
 ```js
-[...document.querySelectorAll('a')].filter(a => /editorial|policy/i.test(a.href) || /editorial.policy/i.test(a.textContent)).map(a => a.href)
+console.log('CitationLinks:', [...document.querySelectorAll('a[href]')].filter(a=>/\.gov|\.edu|ncbi\.nlm|pubmed/i.test(a.href)).length)
 ```
 
----
-
-### Disclaimers (`eeat-disclaimers`) | Severity: warn
+### Affiliate Disclosure | `eeat-affiliate-disclosure` | warn
 ```js
-document.body.innerText.match(/disclaimer|not financial advice|not medical advice|consult a professional/i) ? 'Disclaimer found' : 'No disclaimer found'
+console.log('AffiliateText:', /affiliate|sponsored|paid|commission/i.test(document.body.innerText)?1:0)
 ```
 
----
+### Disclaimers | `eeat-disclaimers` | warn
+```js
+console.log('DisclaimerText:', /disclaimer|not financial advice|not medical advice|consult a professional/i.test(document.body.innerText)?1:0)
+```
 
-### YMYL Detection (`eeat-ymyl-detection`) | Severity: info
-**Note:** Tool auto-detects YMYL keywords (health, finance, legal). Info only — no action needed.
+### Editorial Policy | `eeat-editorial-policy` | warn
+```js
+console.log('EditorialLink:', [...document.querySelectorAll('a')].filter(a=>/editorial|policy/i.test(a.href)).length)
+```
+
+### YMYL Detection | `eeat-ymyl-detection` | info
+```js
+console.log('YMYLKeywords:', /health|medical|financial|legal|safety/i.test(document.body.innerText)?1:0)
+```
+
+### Author Expertise | `eeat-author-expertise` | warn
+**CANNOT VALIDATE** - requires manual review of author bio content
