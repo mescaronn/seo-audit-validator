@@ -1,63 +1,22 @@
----
-name: seo-audit-validator-ai-geo-readiness
-description: "Validates AI/GEO Readiness rules from SEO audit output. Use when audit contains any of: Schema Drift, Semantic HTML, Content Structure, AI Bot Access, llms.txt"
----
+# Skill 19: AI/GEO Readiness
 
-# SEO Audit Validator: AI/GEO Readiness
+### llms.txt | `geo-llms-txt` | info
+**CANNOT VALIDATE** - run: fetch('/llms.txt').then(r=>console.log('LLMsTxt:',r.status))
 
-## Rules
+### AI Bot Access | `geo-ai-bot-access` | warn
+**CANNOT VALIDATE** - run: fetch('/robots.txt').then(r=>r.text()).then(t=>console.log(t)) — look for GPTBot, Claude-Web, Anthropic, Google-Extended blocks
 
-### llms.txt (`geo-llms-txt`) | Severity: info
+### Semantic HTML | `geo-semantic-html` | warn
 ```js
-fetch('/llms.txt').then(r => console.log('llms.txt status:', r.status, '| URL:', r.url))
+const tags=['article','section','aside','nav','main','header','footer','figure','time'];console.log('SemanticTagsUsed:', tags.filter(t=>document.querySelector(t)).length, '| Of:', tags.length)
 ```
-**Compare:** 200 → file exists → false positive. 404 → correct flag.
 
----
-
-### AI Bot Access (`geo-ai-bot-access`) | Severity: warn
+### Content Structure | `geo-content-structure` | warn
 ```js
-fetch('/robots.txt').then(r => r.text()).then(t => {
-  const blockedBots = ['GPTBot','Claude-Web','Anthropic','Google-Extended','CCBot','PerplexityBot'].filter(bot => t.includes('Disallow') && t.toLowerCase().includes(bot.toLowerCase()));
-  console.log('Blocked AI bots:', blockedBots.length ? blockedBots : 'None blocked');
-  console.log('Full robots.txt:', t);
-})
+console.log('H1Count:', document.querySelectorAll('h1').length, '| H2Count:', document.querySelectorAll('h2').length, '| HasLists:', document.querySelector('ul,ol')?1:0, '| ParagraphCount:', document.querySelectorAll('p').length)
 ```
-**Compare:** Any AI bot blocked → correct flag. None blocked → false positive.
 
----
-
-### Semantic HTML (`geo-semantic-html`) | Severity: warn
+### Schema Drift | `geo-schema-drift` | warn
 ```js
-const semanticTags = ['article','section','aside','nav','main','header','footer','figure','figcaption','time','mark','details','summary'];
-const found = semanticTags.filter(tag => document.querySelector(tag));
-console.log('Semantic tags found:', found, '| Missing:', semanticTags.filter(t => !found.includes(t)))
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const p=s.find(x=>x['@type']==='Product');console.log('SchemaName:', p?.name??'none', '| H1:', document.querySelector('h1')?.textContent.trim()??'none')
 ```
-**Compare:** Few or no semantic tags → correct flag. Comprehensive use → false positive.
-
----
-
-### Content Structure (`geo-content-structure`) | Severity: warn
-```js
-console.log('H1:', document.querySelector('h1')?.textContent.trim());
-console.log('H2 count:', document.querySelectorAll('h2').length);
-console.log('Has lists:', !!document.querySelector('ul, ol'));
-console.log('Has tables:', !!document.querySelector('table'));
-console.log('Paragraphs:', document.querySelectorAll('p').length);
-```
-**Compare:** Tool checks if content is well-structured for AI extraction. Missing H1, no headings, no lists = poorly structured.
-
----
-
-### Schema Drift (`geo-schema-drift`) | Severity: warn
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.forEach(s => {
-  if (s['@type'] === 'Product') console.log('Product schema name:', s.name, '| Page H1:', document.querySelector('h1')?.textContent.trim());
-  if (s['@type'] === 'Article') console.log('Article headline:', s.headline, '| Page H1:', document.querySelector('h1')?.textContent.trim());
-});
-```
-**Compare:** Schema name/headline doesn't match page H1 or visible content → correct flag.
