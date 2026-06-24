@@ -1,62 +1,29 @@
----
-name: seo-audit-validator-redirects
-description: "Validates Redirects rules from SEO audit output. Use when audit contains any of: Meta Refresh, JavaScript Redirect, HTTP Refresh Header, Resource Redirect, Case Normalization, Redirect Loop, Redirect Type, Broken Redirect"
----
+# Skill 15: Redirects
 
-# SEO Audit Validator: Redirects
-
-## Rules
-
-### Meta Refresh (`redirect-meta-refresh`) | Severity: warn
+### Meta Refresh | `redirect-meta-refresh` | warn
 ```js
-document.querySelector('meta[http-equiv="refresh"]')?.getAttribute('content') || 'Not found'
+console.log('MetaRefresh:', document.querySelector('meta[http-equiv="refresh"]')?1:0)
 ```
-**Compare:** Found → correct flag. Not found → false positive.
 
----
-
-### JavaScript Redirect (`redirect-javascript`) | Severity: warn
+### JavaScript Redirect | `redirect-javascript` | warn
 ```js
-const scripts = [...document.querySelectorAll('script')].map(s => s.textContent).join(' ');
-console.log('window.location redirect:', /window\.location\s*[=.]/.test(scripts));
-console.log('location.replace redirect:', /location\.replace\s*\(/.test(scripts));
+const s=[...document.querySelectorAll('script')].map(s=>s.textContent).join(' ');console.log('WindowLocationRedirect:', /window\.location\s*[=.]/.test(s)?1:0, '| LocationReplace:', /location\.replace\s*\(/.test(s)?1:0)
 ```
-**Compare:** Either true → correct flag.
 
----
+### HTTP Refresh Header | `redirect-http-refresh` | warn
+**CANNOT VALIDATE** - check Network tab > Response Headers > refresh
 
-### HTTP Refresh Header (`redirect-http-refresh`) | Severity: warn
-```js
-fetch(window.location.href, {method: 'HEAD'}).then(r => console.log('Refresh header:', r.headers.get('refresh')))
-```
-**Compare:** Not null → correct flag.
+### Redirect Loop | `redirect-loop` | fail
+**CANNOT VALIDATE** - use Redirect Path extension
 
----
+### Redirect Type | `redirect-type` | warn
+**CANNOT VALIDATE** - check Network tab > status codes (301 vs 302)
 
-### Redirect Loop (`redirect-loop`) | Severity: fail
-**Note:** Cannot detect via Console. Use Redirect Path extension.
+### Broken Redirect | `redirect-broken` | fail
+**CANNOT VALIDATE** - requires crawl tool
 
----
+### Resource Redirect | `redirect-resource` | warn
+**CANNOT VALIDATE** - check Network tab > filter CSS/JS/images > look for 301/302
 
-### Redirect Type (`redirect-type`) | Severity: warn
-**Note:** Requires checking HTTP response codes. Use Redirect Path extension or Network tab.
-
----
-
-### Broken Redirect (`redirect-broken`) | Severity: fail
-**Note:** Requires crawl-mode to detect broken redirect targets.
-
----
-
-### Resource Redirect (`redirect-resource`) | Severity: warn
-**Check:** DevTools → Network tab → look for CSS/JS/image resources with 301/302 status.
-
----
-
-### Case Normalization (`redirect-case-normalization`) | Severity: warn
-```js
-fetch(window.location.origin + window.location.pathname.toUpperCase()).then(r => {
-  console.log('Uppercase URL status:', r.status, '| Final URL:', r.url);
-  console.log('Redirected to lowercase:', r.url === window.location.href);
-})
-```
+### Case Normalization | `redirect-case-normalization` | warn
+**CANNOT VALIDATE** - navigate to uppercase version of URL and check if redirects
