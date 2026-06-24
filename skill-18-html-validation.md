@@ -1,81 +1,46 @@
----
-name: seo-audit-validator-html-validation
-description: "Validates HTML Validation rules from SEO audit output. Use when audit contains any of: Missing DOCTYPE, Missing Charset, Invalid Head, Noscript in Head, Multiple Heads, Size Limit, Lorem Ipsum, Multiple Titles, Multiple Descriptions"
----
+# Skill 18: HTML Validation
 
-# SEO Audit Validator: HTML Validation
-
-## Rules
-
-### Missing DOCTYPE (`htmlval-missing-doctype`) | Severity: warn
-**Check:** View page source → first line should be `<!DOCTYPE html>`.
+### Missing DOCTYPE | `htmlval-missing-doctype` | warn
 ```js
-document.doctype?.name === 'html' ? 'DOCTYPE present' : 'DOCTYPE MISSING'
+console.log('DOCTYPE:', document.doctype?.name==='html'?1:0)
 ```
 
----
-
-### Missing Charset (`htmlval-missing-charset`) | Severity: warn
+### Missing Charset | `htmlval-missing-charset` | warn
 ```js
-document.querySelector('meta[charset]')?.getAttribute('charset') ||
-document.querySelector('meta[http-equiv="Content-Type"]')?.getAttribute('content') ||
-'Charset MISSING'
+console.log('Charset:', document.querySelector('meta[charset]')?.getAttribute('charset')??document.querySelector('meta[http-equiv="Content-Type"]')?.getAttribute('content')??'none')
 ```
 
----
-
-### Invalid Head (`htmlval-invalid-head`) | Severity: warn
+### Multiple Titles | `htmlval-multiple-titles` | fail
 ```js
-const validTags = ['META','TITLE','LINK','SCRIPT','STYLE','BASE','NOSCRIPT'];
-[...document.head.children].filter(el => !validTags.includes(el.tagName)).map(el => el.tagName)
+console.log('TitleCount:', document.querySelectorAll('title').length)
 ```
-**Compare:** Any non-head tags found → correct flag.
 
----
-
-### Noscript in Head (`htmlval-noscript-in-head`) | Severity: warn
+### Multiple Descriptions | `htmlval-multiple-descriptions` | fail
 ```js
-document.head.querySelector('noscript') ? 'Noscript FOUND in head' : 'No noscript in head'
+console.log('DescCount:', document.querySelectorAll('meta[name="description"]').length)
 ```
-**Compare:** Found → correct flag.
 
----
-
-### Multiple Heads (`htmlval-multiple-heads`) | Severity: fail
+### Invalid Head | `htmlval-invalid-head` | warn
 ```js
-document.querySelectorAll('head').length
+const valid=['META','TITLE','LINK','SCRIPT','STYLE','BASE','NOSCRIPT'];console.log('InvalidHeadTags:', [...document.head.children].filter(el=>!valid.includes(el.tagName)).length)
 ```
-**Compare:** >1 → correct flag. 1 → false positive.
 
----
-
-### Size Limit (`htmlval-size-limit`) | Severity: warn/fail
+### Noscript in Head | `htmlval-noscript-in-head` | warn
 ```js
-console.log('HTML size:', (new Blob([document.documentElement.outerHTML]).size / 1024).toFixed(1) + ' KB')
+console.log('NoscriptInHead:', document.head.querySelector('noscript')?1:0)
 ```
-**Compare:** Tool's reported size vs your measurement. Threshold: >500KB warn, >5MB fail.
-**Note:** Your measurement via Blob includes rendered DOM (dynamic content). May differ from tool's raw HTML measurement.
 
----
-
-### Lorem Ipsum (`htmlval-lorem-ipsum`) | Severity: warn
+### Multiple Heads | `htmlval-multiple-heads` | fail
 ```js
-document.body.innerText.includes('Lorem ipsum') ? 'Lorem ipsum FOUND' : 'No Lorem ipsum'
+console.log('HeadCount:', document.querySelectorAll('head').length)
 ```
-**Compare:** Found → correct flag.
 
----
-
-### Multiple Titles (`htmlval-multiple-titles`) | Severity: fail
+### Size Limit | `htmlval-size-limit` | warn/fail
 ```js
-document.querySelectorAll('title').length
+console.log('HTMLSizeKB:', Math.round(new Blob([document.documentElement.outerHTML]).size/1024))
 ```
-**Compare:** >1 → correct flag. 1 → false positive.
 
----
-
-### Multiple Descriptions (`htmlval-multiple-descriptions`) | Severity: fail
+### Lorem Ipsum | `htmlval-lorem-ipsum` | warn
 ```js
-document.querySelectorAll('meta[name="description"]').length
+console.log('LoremIpsum:', document.body.innerText.includes('Lorem ipsum')?1:0)
 ```
-**Compare:** >1 → correct flag. 1 → false positive.
