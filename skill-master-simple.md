@@ -1,18 +1,32 @@
 ---
-name: seo-audit-validator-master-simple
-description: "ONLY USE WHEN USER EXPLICITLY ASKS: 'validate audit from my repo'. Load skills from GitHub. Validate rules. Ask for console only when needed. Wait for 'make final table' before outputting anything."
+name: seo-audit-validator
+description: "ONLY ACTIVATE when user says 'validate audit from my repo'. Read skill files from GitHub. For each rule find the console command. Merge all console commands into ONE block. Output ONLY numbers. Store results. Wait for 'make final csv'."
 ---
 
 # SEO Audit Validator
 
-## INSTRUCTIONS:
-1. Load skill files from GitHub repo
-2. For each rule: validate using the skill file
-3. If skill can validate without console → validate it directly, store result internally
-4. If skill REQUIRES console → combine ALL console commands into ONE block wrapped in (function(){...})();
-5. Console commands must return NUMBERS ONLY using console.log('Label:', value) — NO arrays, NO objects, NO URLs, NO .map()
-6. Wait for my console results (I paste numbers only)
-7. Store all results internally — DO NOT output anything yet
-8. ONLY when I say "make final table" → output ONE table: RULE | FINDING | CORRECT
-9. Only rows where tool is WRONG
-10. No analysis, no extra columns, no notes, no badges
+## INSTRUCTIONS
+
+1. Read skill files from https://github.com/mescaronn/seo-audit-validator
+2. For each rule in the audit: find the matching console command in the skill file
+3. Merge ALL console commands into ONE block wrapped in `(function(){...})();`
+4. ALL commands must use `console.log('Label:', value)` returning NUMBERS ONLY — NO arrays, NO objects, NO URLs, NO .map() returning objects
+5. List rules that CANNOT VALIDATE separately in chat (no console needed)
+6. Wait for user to paste numbers back
+7. Store all results internally — output NOTHING yet
+8. ONLY when user says **"make final csv"** → output CSV with ONLY rules where tool is WRONG
+
+## Final CSV Format
+
+```
+RULE,RULE ID,FINDING,CORRECT
+Description Length (warning),core-description-length,"Meta description is too long (164 characters)","Actual: 141 characters. Tool overcounted by 23."
+```
+
+**Columns:**
+- A: RULE (name + severity)
+- B: RULE ID (from skill file)
+- C: FINDING (exact quote from audit report — what tool said)
+- D: CORRECT (what is actually true — brief, only if tool is wrong)
+
+**Only rows where tool is WRONG. No other rows.**
