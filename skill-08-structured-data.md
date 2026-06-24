@@ -1,176 +1,66 @@
----
-name: seo-audit-validator-structured-data
-description: "Validates Structured Data rules from SEO audit output. Use when audit contains any of: Required Fields, Article Schema, Breadcrumb Schema, Schema Present, Schema Valid, Schema Type, Product Schema, Review Schema, Video Schema, LocalBusiness, Organization, WebSite Search, FAQ Schema"
----
+# Skill 08: Structured Data
 
-# SEO Audit Validator: Structured Data
-
-## Base Command (use first for all schema rules)
+### Schema Present | `schema-present` | warn
 ```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const json = JSON.parse(s.textContent);
-  return json['@graph'] ? json['@graph'] : [json];
-});
-console.log('Schema types found:', schemas.map(s => s['@type']));
+console.log('SchemaCount:', document.querySelectorAll('script[type="application/ld+json"]').length)
 ```
 
-## Rules
-
-### Schema Present (`schema-present`) | Severity: warn
-**Console:**
+### Schema Valid | `schema-valid` | fail
 ```js
-document.querySelectorAll('script[type="application/ld+json"]').length
-```
-**Compare:** 0 → correct flag. >0 → false positive.
-
----
-
-### Schema Valid (`schema-valid`) | Severity: fail
-**Console:**
-```js
-[...document.querySelectorAll('script[type="application/ld+json"]')].map(s => {
-  try { JSON.parse(s.textContent); return 'valid'; }
-  catch(e) { return 'INVALID: ' + e.message; }
-})
-```
-**Compare:** Any 'INVALID' → correct flag. All 'valid' → false positive.
-
----
-
-### Schema Type (`schema-type`) | Severity: warn
-**Console:**
-```js
-[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'].map(n => n['@type']) : [j['@type']];
-})
-```
-**Compare:** Any undefined/@type missing → correct flag.
-
----
-
-### Required Fields (`schema-required-fields`) | Severity: warn
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.forEach(s => console.log(JSON.stringify(s, null, 2)));
-```
-**Compare:** Tool lists specific missing fields. Check each schema object for those fields.
-**Note:** If tool doesn't list WHICH fields are missing → report as output issue (tool should specify).
-
----
-
-### WebSite Search (`schema-website-search`) | Severity: info
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'WebSite').map(s => ({name: s.name, url: s.url, hasSearch: !!s.potentialAction}))
-```
-**Compare:** WebSite schema with name + url → false positive. Missing → correct flag.
-**Note:** Tool may not detect @graph structure. Verify manually in Elements if console shows empty.
-
----
-
-### Product Schema (`schema-product`) | Severity: fail
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'Product').map(s => ({name: s.name, hasOffers: !!s.offers, hasPrice: !!s.offers?.price}))
-```
-**Compare:** For product pages, missing Product schema → correct. Has schema with all required fields → false positive.
-
----
-
-### Article Schema (`schema-article`) | Severity: warn
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => ['Article','BlogPosting','NewsArticle'].includes(s['@type'])).map(s => ({type: s['@type'], hasHeadline: !!s.headline, hasAuthor: !!s.author, hasDate: !!s.datePublished}))
-```
-**Compare:** For blog/article pages, check required fields.
-
----
-
-### Breadcrumb Schema (`schema-breadcrumb`) | Severity: info
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'BreadcrumbList').map(s => s.itemListElement?.length + ' items')
-```
-**Compare:** Missing on non-homepage → correct flag. Present → false positive.
-
----
-
-### FAQ Schema (`schema-faq`) | Severity: fail
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'FAQPage').map(s => ({questions: s.mainEntity?.length, hasAnswers: s.mainEntity?.every(q => q.acceptedAnswer?.text)}))
-```
-**Compare:** Missing on FAQ page → correct flag. Present with valid structure → false positive.
-
----
-
-### LocalBusiness (`schema-local-business`) | Severity: warn
-**Console:**
-```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'LocalBusiness' || s['@type']?.includes('Business')).map(s => ({name: s.name, hasAddress: !!s.address, hasPhone: !!s.telephone}))
+console.log('InvalidSchemas:', [...document.querySelectorAll('script[type="application/ld+json"]')].filter(s=>{try{JSON.parse(s.textContent);return false;}catch(e){return true;}}).length)
 ```
 
----
-
-### Organization (`schema-organization`) | Severity: info
-**Console:**
+### Schema Type | `schema-type` | warn
 ```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'Organization').map(s => ({name: s.name, hasLogo: !!s.logo, hasSameAs: !!s.sameAs}))
+console.log('SchemaTypes:', [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph'].map(n=>n['@type']):[j['@type']];}).join(','))
 ```
 
----
-
-### Review Schema (`schema-review`) | Severity: warn
-**Console:**
+### Required Fields | `schema-required-fields` | warn
 ```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => ['Review','AggregateRating'].includes(s['@type'])).map(s => s['@type'])
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});console.log('SchemaTypes:',s.map(x=>x['@type']).join(','),'| Names:',s.map(x=>x.name||x.headline||'no-name').join(','))
 ```
 
----
-
-### Video Schema (`schema-video`) | Severity: warn
-**Console:**
+### WebSite Search | `schema-website-search` | info
 ```js
-const schemas = [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s => {
-  const j = JSON.parse(s.textContent);
-  return j['@graph'] ? j['@graph'] : [j];
-});
-schemas.filter(s => s['@type'] === 'VideoObject').map(s => ({name: s.name, hasThumb: !!s.thumbnailUrl, hasDate: !!s.uploadDate}))
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const ws=s.filter(x=>x['@type']==='WebSite');console.log('WebSiteSchema:', ws.length, '| HasName:', ws[0]?.name?1:0, '| HasURL:', ws[0]?.url?1:0)
+```
+
+### Product Schema | `schema-product` | fail
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const p=s.filter(x=>x['@type']==='Product');console.log('ProductSchema:', p.length, '| HasOffers:', p[0]?.offers?1:0, '| HasPrice:', p[0]?.offers?.price?1:0)
+```
+
+### Article Schema | `schema-article` | warn
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const a=s.filter(x=>['Article','BlogPosting','NewsArticle'].includes(x['@type']));console.log('ArticleSchema:', a.length, '| HasHeadline:', a[0]?.headline?1:0, '| HasAuthor:', a[0]?.author?1:0, '| HasDate:', a[0]?.datePublished?1:0)
+```
+
+### Breadcrumb Schema | `schema-breadcrumb` | info
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const b=s.filter(x=>x['@type']==='BreadcrumbList');console.log('BreadcrumbSchema:', b.length, '| Items:', b[0]?.itemListElement?.length??0)
+```
+
+### FAQ Schema | `schema-faq` | fail
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const f=s.filter(x=>x['@type']==='FAQPage');console.log('FAQSchema:', f.length, '| Questions:', f[0]?.mainEntity?.length??0)
+```
+
+### LocalBusiness | `schema-local-business` | warn
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const lb=s.filter(x=>x['@type']==='LocalBusiness'||String(x['@type']).includes('Business'));console.log('LocalBusinessSchema:', lb.length, '| HasAddress:', lb[0]?.address?1:0)
+```
+
+### Organization | `schema-organization` | info
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const org=s.filter(x=>x['@type']==='Organization');console.log('OrgSchema:', org.length, '| HasLogo:', org[0]?.logo?1:0)
+```
+
+### Review Schema | `schema-review` | warn
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});console.log('ReviewSchema:', s.filter(x=>x['@type']==='Review').length, '| AggRating:', s.filter(x=>x['@type']==='AggregateRating').length)
+```
+
+### Video Schema | `schema-video` | warn
+```js
+const s=[...document.querySelectorAll('script[type="application/ld+json"]')].flatMap(s=>{const j=JSON.parse(s.textContent);return j['@graph']?j['@graph']:[j];});const v=s.filter(x=>x['@type']==='VideoObject');console.log('VideoSchema:', v.length, '| HasThumb:', v[0]?.thumbnailUrl?1:0, '| HasDate:', v[0]?.uploadDate?1:0)
 ```
