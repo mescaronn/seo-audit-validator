@@ -1,140 +1,70 @@
----
-name: seo-audit-validator-javascript-rendering
-description: "Validates JavaScript Rendering rules from SEO audit output. Use when audit contains any of: JS Noindex Mismatch, JS Title Modified, JS Description Modified, JS H1 Modified, JS Rendered Content, JS Rendered Links, JS Blocked Resources, SSR Check, JS Rendered Title, JS Rendered Description, JS Rendered H1, JS Rendered Canonical, JS Canonical Mismatch"
----
+# Skill 10: JavaScript Rendering
 
-# SEO Audit Validator: JavaScript Rendering
+### JS Blocked Resources | `js-blocked-resources` | warn
+**CANNOT VALIDATE** - run: fetch('/robots.txt').then(r=>r.text()).then(t=>console.log(t)) — look for Disallow on .js files
 
-## Base Concept
-These rules compare the raw HTML source (what crawlers see) vs the rendered DOM (what you see). To check source: right-click page → View Page Source → Ctrl+F to search.
-
-## Rules
-
-### JS Rendered Title (`js-rendered-title`) | Severity: fail
-**Source check:** View page source → search for `<title>`. If absent → correct flag.
-**Console (rendered):**
+### SSR Check | `js-ssr-check` | warn/fail
 ```js
-document.querySelector('title')?.textContent
+console.log('RenderedTextLen:', document.body.innerText.length)
 ```
-**Compare:** Title in rendered DOM but missing in source → tool correct. Title in both → false positive.
+**Also check** - View Page Source (Ctrl+U) and compare text length to rendered
 
----
-
-### JS Rendered Description (`js-rendered-description`) | Severity: warn
-**Source check:** View page source → search for `meta name="description"`.
-**Console (rendered):**
+### JS Rendered Title | `js-rendered-title` | fail
 ```js
-document.querySelector('meta[name="description"]')?.getAttribute('content')
+console.log('RenderedTitle:', document.querySelector('title')?.textContent ?? 'none')
 ```
-**Compare:** Present in rendered but absent in source → correct.
+**Also check** - View Page Source > search for <title>
 
----
-
-### JS Rendered H1 (`js-rendered-h1`) | Severity: fail
-**Source check:** View page source → search for `<h1>`.
-**Console (rendered):**
+### JS Rendered Description | `js-rendered-description` | warn
 ```js
-document.querySelector('h1')?.textContent.trim()
+console.log('RenderedDesc:', document.querySelector('meta[name="description"]')?.getAttribute('content') ?? 'none')
 ```
-**Compare:** H1 in rendered but absent in source → correct flag.
 
----
-
-### JS Rendered Canonical (`js-rendered-canonical`) | Severity: fail
-**Source check:** View page source → search for `rel="canonical"`.
-**Console (rendered):**
+### JS Rendered H1 | `js-rendered-h1` | fail
 ```js
-document.querySelector('link[rel="canonical"]')?.href
+console.log('RenderedH1:', document.querySelector('h1')?.textContent.trim() ?? 'none')
 ```
-**Compare:** Canonical in rendered but absent in source → correct flag.
 
----
-
-### JS Canonical Mismatch (`js-canonical-mismatch`) | Severity: fail
-**Source canonical:** View page source → find canonical.
-**Console (rendered canonical):**
+### JS Rendered Canonical | `js-rendered-canonical` | fail
 ```js
-document.querySelector('link[rel="canonical"]')?.href
+console.log('RenderedCanonical:', document.querySelector('link[rel="canonical"]')?.href ?? 'none')
 ```
-**Compare:** If source canonical ≠ rendered canonical → correct flag.
 
----
-
-### JS Noindex Mismatch (`js-noindex-mismatch`) | Severity: fail
-**Source check:** View page source → search for `noindex`.
-**Console (rendered):**
+### JS Canonical Mismatch | `js-canonical-mismatch` | fail
 ```js
-document.querySelector('meta[name="robots"]')?.getAttribute('content')
+console.log('RenderedCanonical:', document.querySelector('link[rel="canonical"]')?.href ?? 'none')
 ```
-**Compare:** Noindex in source but not rendered (or vice versa) → correct flag.
+**Also check** - View Page Source > search for rel="canonical"
 
----
-
-### JS Title Modified (`js-title-modified`) | Severity: warn
-**Source check:** View page source → note exact title.
-**Console (rendered):**
+### JS Noindex Mismatch | `js-noindex-mismatch` | fail
 ```js
-document.querySelector('title')?.textContent
+console.log('RenderedRobots:', document.querySelector('meta[name="robots"]')?.getAttribute('content') ?? 'none')
 ```
-**Compare:** If rendered title differs from source title → correct flag. JS is modifying it.
+**Also check** - View Page Source > search for meta name="robots"
 
----
-
-### JS Description Modified (`js-description-modified`) | Severity: warn
-**Source check:** View page source → note exact description.
-**Console (rendered):**
+### JS Title Modified | `js-title-modified` | warn
 ```js
-document.querySelector('meta[name="description"]')?.getAttribute('content')
+console.log('RenderedTitle:', document.querySelector('title')?.textContent ?? 'none')
 ```
-**Compare:** Different from source → correct flag.
+**Also check** - View Page Source > compare title
 
----
-
-### JS H1 Modified (`js-h1-modified`) | Severity: warn
-**Source check:** View page source → find H1 content.
-**Console (rendered):**
+### JS Description Modified | `js-description-modified` | warn
 ```js
-document.querySelector('h1')?.textContent.trim()
+console.log('RenderedDesc:', document.querySelector('meta[name="description"]')?.getAttribute('content') ?? 'none')
 ```
-**Compare:** Different → correct flag.
 
----
-
-### JS Rendered Content (`js-rendered-content`) | Severity: warn
-**Source check:** View page source → check if main body content exists or is mostly empty `<div>` wrappers.
-**Console:**
+### JS H1 Modified | `js-h1-modified` | warn
 ```js
-console.log('Rendered text length:', document.body.innerText.length)
+console.log('RenderedH1:', document.querySelector('h1')?.textContent.trim() ?? 'none')
 ```
-**Source:** View source and search for same content. If source is much shorter → JS is rendering main content.
 
----
-
-### JS Rendered Links (`js-rendered-links`) | Severity: warn
-**Console (rendered):**
+### JS Rendered Content | `js-rendered-content` | warn
 ```js
-[...document.querySelectorAll('a[href]')].filter(a => a.hostname === window.location.hostname).length
+console.log('RenderedTextLen:', document.body.innerText.length)
 ```
-**Source check:** View source → count `<a href` occurrences. If rendered count >> source count → JS is generating links.
+**Also check** - View Page Source > compare content length
 
----
-
-### JS Blocked Resources (`js-blocked-resources`) | Severity: warn
-**Console:**
+### JS Rendered Links | `js-rendered-links` | warn
 ```js
-fetch('/robots.txt').then(r => r.text()).then(t => {
-  const blocks = t.match(/Disallow:.+/gi)?.filter(l => l.match(/\.(js|css)/i));
-  console.log('Blocked JS/CSS rules:', blocks || 'None');
-})
+console.log('RenderedInternalLinks:', [...document.querySelectorAll('a[href]')].filter(a=>a.hostname===window.location.hostname).length)
 ```
-**Compare:** No blocking rules → false positive.
-
----
-
-### SSR Check (`js-ssr-check`) | Severity: warn/fail
-**Source check:** View page source → check if meaningful content exists in raw HTML.
-**Console:**
-```js
-console.log('Rendered text length:', document.body.innerText.length)
-```
-**Source:** Shorter source → less SSR. Compare source text to rendered text.
